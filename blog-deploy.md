@@ -66,3 +66,26 @@ systemctl enable mariadb
 mysql -u root -p
 -- 确认数据库存在
 SHOW DATABASES;
+# 第三部分：Docker部署排障
+## 问题1：yum安装Docker失败 — 进程锁冲突
+**现象**：
+```bash
+Existing lock /var/run/yum.pid: another copy is running as pid 19493.
+```
+**原因**：CentOS 7 的 `yum-cron`（自动更新服务）正在后台运行，占用了 yum 进程锁，导致手动安装命令无法执行。
+**排查过程**：
+```bash
+# 1. 查看 pid 19493 是什么进程
+ps aux | grep 19493
+```
+**解决**：
+```bash
+# 杀掉占用锁的进程
+kill -9 19493
+# 如果杀进程后仍提示锁存在，手动清理锁文件
+rm -f /var/run/yum.pid
+# 确认无其他 yum 进程
+ps aux | grep yum
+# 重新安装 Docker
+yum install -y docker
+```
